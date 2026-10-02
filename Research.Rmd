@@ -1,0 +1,54 @@
+---
+title: "Research Question 3"
+author: "Lunjia Dai"
+date: "2025-06-02"
+output: html_document
+---
+
+```{r}
+library("tidyverse")
+
+poverty_data <- read_delim("./Datasets/poverty_Neighborhoods_4633402121131220268.csv")
+
+
+poverty_rates <- poverty_data %>%
+  select(
+    Neighborhood = `Neighborhood Name`,
+    unemployed_20_64 = `Population 20 to 64 years unemployed`,
+    laborforce_20_64 = `Population 20 to 64 years in civilian labor force`,
+    deep_pov_civlab_20_64 = `Population 20 to 64 years in civilian labor force below poverty`
+  ) %>%
+  mutate(
+    unemp_rate_20_64 = unemployed_20_64 / laborforce_20_64,
+    deep_pov_rate_20_64 = deep_pov_civlab_20_64 / laborforce_20_64
+  ) %>% 
+  mutate(
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Ballard|Sunset Hill|Whittier Heights|Blue Ridge|Crown Hill|Bitter Lake|Broadview|Greenwood"), "Ballard", "N/A"),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Capitol Hill|First Hill/Capitol Hill|North Capitol Hill|Miller Park|Madison-Miller|First Hill"), "Capitol Hill", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Central Area|Judkins Park|Madrona|Leschi|23rd & Union-Jackson"), "Central District", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Downtown|Belltown|Pioneer Square|Uptown|South Lake Union|Cascade|Fremont"), "Downtown / Core", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Eastlake|Montlake|Portage Bay|Madison Park"), "Eastlake", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Queen Anne|Upper Queen Anne|Magnolia|Interbay"), "Queen Anne / Magnolia", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "SODO|Duwamish|Georgetown|Greater Duwamish"), "SODO / Duwamish", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "South Park|Othello|Rainier Beach|Columbia City|Mt\\. Baker|NewHolly|Beacon Hill"), "South Seattle", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "University District|Roosevelt|Ravenna|Bryant|Wedgwood|View Ridge|Northgate|Maple Leaf|Laurelhurst|Sand Point|Lake City"), "University District", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "West Seattle|Admiral|Fauntleroy|Genesee Hill|Junction|Arbor Heights|Highland Park|Westwood|High Point|Riverview|Delridge"), "West Seattle", NeighborhoodGroup)
+  ) %>%
+  group_by(NeighborhoodGroup) %>% 
+  filter(NeighborhoodGroup != "N/A")
+
+ggplot(poverty_rates, aes(x = unemp_rate_20_64, y = deep_pov_rate_20_64, color = factor(NeighborhoodGroup))) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    x = "Unemployment Rate",
+    y = "Deep-Poverty Rate",
+    title = "Unemployment vs. Deep Poverty (20–64 yrs) on a neighborhood level",
+    color = "Neighborhood"
+  )
+```
+
+The scatterplot shows that neighborhoods with higher unemployment rates among adults aged 20 to 64 tend to also have higher deep-poverty rates. Even though there’s some neighborhoods that have low unemployment and still have higher deep poverty, the overall trend line goes up. This suggests that in general, as unemployment increases in a neighborhood, so does the rate of deep poverty for working-age adults.
+
+
+

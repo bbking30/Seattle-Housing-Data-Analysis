@@ -1,0 +1,143 @@
+### Public Amenities Access
+```{r}
+
+library(tidyverse)
+crime_data <- read_csv("./Datasets/SPD_Crime_Data__2008-Present.csv")
+
+population_data <- read_csv("./Datasets/hh_population_types_Neighborhoods_7932363052017489999.csv")
+
+
+urban_data <- read_csv("./Datasets/Urban_Centers_and_Villages_Growth_Monitoring_Table.csv")
+
+parks_data <- read_csv("./Datasets/Parks_Not_SPR_-6276928844092750966.csv")
+
+
+unique(parks_data$OWNER)
+
+
+population_data <- population_data %>% 
+  select(`Neighborhood Name`, `Total Population`) %>% 
+  filter(`Total Population` > 0) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Belltown|Downtown Commercial Core|Pioneer Square/International District|Uptown|Downtown|South Lake Union"), "Downtown / Core", NA)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Capitol Hill|North Capitol Hill|First Hill|First Hill/Capitol Hill"),
+    "Capitol Hill", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Rainier Beach|Columbia City|Seward Park|Mt. Baker/North Rainier|Othello|South Park|Riverview|Roxhill/Westwood|Highland Park"),
+    "South Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Duwamish/SODO|Georgetown|Greater Duwamish"), "SODO / Duwamish", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Central Area/Squire Park|Judkins Park|Madrona/Leschi|23rd & Union-Jackson|Madison-Miller"), "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Ballard|Sunset Hill/Loyal Heights|Whittier Heights|Crown Hill|Greenwood/Phinney Ridge|Greenwood-Phinney Ridge"),
+    "Ballard", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Queen Anne|Upper Queen Anne|Interbay|Magnolia"), "Queen Anne / Magnolia", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "West Seattle Junction|Morgan Junction|Alki/Admiral|Fauntleroy/Seaview|Arbor Heights|Genesee Hill|North Delridge"), "West Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "University District|Roosevelt|Ravenna/Bryant|Laurelhurst/Sand Point|Wedgwood/View Ridge"), "University District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Northgate|Olympic Hills/Victory Heights|Haller Lake|Cedar Park/Meadowbrook|Aurora-Licton Springs"), "North Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Green Lake|Wallingford|Fremont"), "Green Lake / Wallingford", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Eastlake|Cascade/Eastlake"), "Eastlake", NeighborhoodGroup)) %>%
+  filter(!is.na(NeighborhoodGroup)) 
+
+urban_data <- urban_data %>%
+  select(`Village Name` = VILLAGE_NAME, 
+         `Plan Type` = COMP_PLAN_TYPE) %>% 
+  filter(`Plan Type` %in% c("Urban Centers", "Hub Urban Villages")) 
+
+
+urban_data <- urban_data %>% 
+  mutate(NeighborhoodGroup = "N/A") %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Capitol Hill|First Hill|First Hill/Capitol Hill"), "Capitol Hill", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Ballard|Fremont"), "Ballard", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Belltown|West Seattle Junction|Belltown|South Lake Union"), "West Seattle", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "University Campus|University District|University District Northwest"), "University District", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Bitter Lake Village|Lake City|Northgate|Ravenna"), "North Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "12th Avenue|Pike/Pine"), "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(`Village Name` == "Mt Baker", "South Seattle", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(`Village Name` == "Uptown", "Queen Anne / Magnolia", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Chinatown-International District|Commercial Core|Downtown|Pioneer Square|Denny Triangle"), "Downtown / Core", NeighborhoodGroup)) %>% 
+  filter(NeighborhoodGroup != "N/A") %>% 
+  group_by(NeighborhoodGroup, )
+
+
+urban_data <- urban_data %>% 
+  group_by(`NeighborhoodGroup`) %>% 
+  summarize(`Urban Center Count` = n())
+
+
+parks_data <- parks_data %>% 
+  select(Name = NAME)  
+  
+  
+parks_data <- parks_data %>%
+  mutate(NeighborhoodGroup = "N/A") %>% 
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Sakuma Viewpoint|Myrtle Edwards Park|Carl S English, Jr Gardens|South Ship Canal Trail"),
+    "Queen Anne / Magnolia",
+    NA_character_)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Ruby Chow Park|Toolalt Village Park|Sbaqwah Park|Tathtathootseed Park|Jack Perry Memorial Park|El Centro De La Raza"),
+    "South Seattle",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Shilshole Bay Marina|Burke-Gilman Trail|Hiram M. Chittenden Locks"),
+    "Ballard",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Olympic Sculpture Park|Bell Street Pier at Pier 66|Fortson Square|Washington Street End|Seattle Center|Habitat Beach"),
+    "Downtown / Core",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Jack Block Park|Terminal 18 Public Access Park|Terminal 115 Viewpoint|Fishermen's Terminal|Harbor Marina Corporate Center|Spokane Street Bridge|Bridge Gear Park|Duwamish River Peoples Park"),
+    "SODO / Duwamish",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Salmon Cove Park|Hahahpoos Village Park"),
+    "West Seattle",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Montlake Cut|Union Bay Natural Area|Peace Park"),
+    "University District",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(Name == "Centennial Park", "Central District", NeighborhoodGroup)) %>% 
+  group_by(NeighborhoodGroup) %>% 
+  summarize(`Park Count` = n_distinct(Name))
+
+
+amenities_data <- merge(urban_data, parks_data, by = "NeighborhoodGroup") %>% 
+  rename(
+    `UCC` = `Urban Center Count`,
+    `PC` = `Park Count`
+  ) %>% 
+  mutate(`Total` = `UCC` + `PC`)
+
+amenities_data <- merge(amenities_data, population_data, by = "NeighborhoodGroup") %>% 
+  select(NeighborhoodGroup, `Total Population`, UCC, PC, Total) %>% 
+  group_by(NeighborhoodGroup) %>% 
+  summarize(`Population` = sum(`Total Population`),
+           UCC = sum(UCC, na.rm = TRUE) / n(),
+    PC = sum(PC, na.rm = TRUE) / n(),
+    Total = sum(Total, na.rm = TRUE) / n())
+
+
+amenities_data <- amenities_data %>% 
+  mutate(`Amenities Rate` = (Total / Population) * 10000)
+
+ggplot(amenities_data, aes(x = NeighborhoodGroup, y = `Amenities Rate`, fill = factor(NeighborhoodGroup))) +
+  coord_flip() +
+  geom_col() +
+  labs(
+    title = "Amenities Distribution by Neighborhood",
+    x = "Neighborhood",
+    y = "Number of Amenities per 10,000 Residents",
+    fill = "Neighborhood"
+  )
+```

@@ -1,0 +1,792 @@
+---
+title: "INFO 201 Final Project: Section AC Group 5"
+author: Brooks Kahsai, Njeri Kimani, Lunjia Dai, Anika Indurkar, Andrew Tomoiaga
+output: html_document
+---
+
+## Abstract
+This project analyzes the factors that contribute to quality of life across Seattle neighborhoods, using data on crime rates, education and diversity, access to amenities, and economic indicators. We chose this topic because many members of our group are Seattle residents or have experienced housing challenges as students, making it a personally relevant and socially meaningful issue. Our analysis, covering the years 2016–2024, identified Eastlake, Wallingford, and Capitol Hill as the most livable neighborhoods in Seattle. These neighborhoods met several key criteria: crime rates consistently below 50 incidents per 1,000 residents, at least one public park or community center, proximity to public institutions, and relatively larger residential populations. They also demonstrated stable school enrollment across age groups and strong access to amenities, positioning them as leading candidates for the best places to live in the city.
+
+
+## Introduction
+
+The quality of life in urban environments is a subject of growing interest, particularly as cities expand and residents face mounting challenges related to affordability, safety, and equitable access to resources. In Seattle, a city defined by its recent and rapid development, tech-driven economy, and substantial rising cost of living relative to the rest of the U.S., these issues are especially urgent. As college students, many of whom live in or near Seattle, our group has firsthand experience with the housing struggles and neighborhood disparities that shape daily life in the city, either in finding housing ourselves as we attend the University of Washington, or having grown up witness to these struggles with our families. This made exploring the lived realities of Seattle residents a timely and relevant topic.
+
+Our objective was to analyze neighborhood livability in Seattle through several measurable factors, including crime rates, educational enrollment, racial and ethnic diversity, access to public amenities, and economic indicators. We approached the project by posing the following research questions:
+
+* How does the crime rate change between 2016 and the present time in the city of Seattle? How do the proportions of types of crimes being committed in specific neighborhoods change during this time? 
+* How do education and demographic distributions (age, race, gender) intersect with income, crime rate, and access to public amenities in Seattle neighborhoods? 
+* Is there a relationship between unemployment and deep poverty among working‐age adults (20–64) 
+* How does your location influence access to public facilities? 
+
+By answering these questions, we aim to provide deeper insight into the quality of life across Seattle neighborhoods, particularly for those new to the area or navigating the city alone as students. While cost is often central in housing discussions, we felt it was equally important to consider what that cost affords in terms of lifestyle, trade-offs, and the broader experience of living in Seattle. We hope this study offers a much-needed lens through which to view the city’s evolving livability landscape, one that balances numbers with lived experience.
+
+
+## Data Sources
+
+### 1. Crime Section Data
+
+* Source:
+  - [Seattle Crime Data](https://drive.google.com/file/d/1XJOELtMexx4owAZOP8zedmwJv_Mzsu4v/view?usp=share_link)  
+  - [Seattle Population Data for the Rates](https://drive.google.com/file/d/1D4vTvKO8I4uRnIXsZyqnbjrTmTV5NFA7/view?usp=share_link) 
+* Collected By: Seattle Police Department (SPD) (Obtained from Data.gov)
+* Usage Permissions: Freely accessible for public use under the City of Seattle’s open data policy.
+*	Description: Provides detailed information on reported crimes in Seattle, categorized by type, location, and time frame.
+* Relevance: Essential for analyzing crime trends and safety across different neighborhoods, directly supporting our research on livability factors. Factors by neighborhood, date of crime, date of report, offense number, type of crime, subtype of crime, etc. Data spans from 2008-2025 (Usable data from 2016-2024)
+
+### 2. Education/Diversity Section Data
+* Source:
+  - [Race-Ethnicity Data](https://drive.google.com/file/d/1MmvSH4N4tts6VUl-TWrv6kNxzXcEVctH/view?usp=sharing)  
+  - [Education Data](https://drive.google.com/file/d/106_b2qzSiYGiWeId8H0vtBVYuDtbI6T7/view?usp=share_link)
+*	Collected By: 
+  - U.S. Census Bureau via the American Community Survey (ACS) 5-year estimates (Obtained from Data.gov)
+  - U.S. Census Bureau via the ACS 5-year estimates (Obtained from Data.gov)
+*	Usage Permissions: Publicly available for use without restrictions.
+*	Description: Contains data on educational enrollment and attainment across Seattle neighborhoods.
+*	Relevance: Allows for assessment of educational access and attainment, contributing to our understanding of neighborhood livability. Also can examine diversity, and when merging the two datasets, assess if there is a correlation between diversity levels in neighborhoods and higher/lower education levels
+
+### 3. Economic Indicators Section Data
+*	Source: [Poverty-Unemployment Data](https://drive.google.com/file/d/1_NkDJTsyPebRZxrS6i_gIrxs3PzzsBE1/view?usp=sharing)
+* Collected By: U.S. Census Bureau via the ACS 5-year estimates (Obtained from Data.gov)
+*	Usage Permissions: Available for public use without limitations.
+*	Description: Includes data on income levels, employment status, and deep poverty rates across neighborhoods.
+*	Relevance: Supports analysis of economic factors influencing neighborhood livability. 
+
+### 4. Public Amenities Section Data
+* Source:
+  - [Urban Centers Data](https://drive.google.com/file/d/1k2JrXqRPI6n4nvUxiCcR_Ofe59PkCj04/view?usp=sharing)  
+  - [Fitness Centers Data](https://drive.google.com/file/d/1R4L6gIkeV0sa2PbdT3B9E2Oi-JSl6eKW/view?usp=sharing)
+*	Collected By: City of Seattle’s Geographic Information Systems (GIS) Department (Obtained from Data.gov)
+*	Usage Permissions: Freely accessible for public use.
+*	Description: Offers spatial data on public amenities such as parks, community centers, and libraries.
+*	Relevance: Enables assessment of residents’ access to essential public facilities, a key component of livability.
+
+
+## Data
+
+### Crime Data
+
+* Rows: 1,450,815
+* Columns: 19
+* Each row represents: A single reported crime incident in the city of Seattle, including details such as date, location, type of crime, and reporting information.
+* Relevant variables and how they’re coded:
+  * Report DateTime: Originally stored as a string; converted to a Date object using parse_time() to support time-based analysis. The year was extracted from this to enable yearly grouping and summarization.
+  * Offense Category & Offense Subcategory: Categorical variables describing the nature of the crime. These were cleaned and consolidated into three simplified categories: Violent, Property, and All Other.
+  * Neighborhood: A text label for the specific location of the offense. This was used to construct a broader regional variable (NeighborhoodGroup) for cross-dataset consistency.
+  * offense_count: A derived numeric variable summarizing the number of offenses by year, offense type, and neighborhood group.
+    * grouped by(year, NeighborhoodGroup) in pipeline, offense_count = n()
+  * Other fields such as Report Number, Offense Description, and Method were retained in the dataset but not central to the core analysis.
+* Missing / Implausible values: Filtered out all years with minimal reports of crimes irrespective of neighborhood.
+
+### Population Data
+
+* Rows: 92
+* Columns: 31
+* Each row represents: A Seattle neighborhood with associated demographic and population data.
+* Relevant variables and how they’re coded:
+  * Neighborhood Name: A string identifier that matches to crime data via a manually constructed NeighborhoodGroup.
+  * Total Population: Numeric variable used to normalize crime rates across neighborhoods.
+  * NeighborhoodGroup: A manually created categorical variable grouping similar or geographically related neighborhoods to enable alignment with the crime dataset.
+* Missing / Implausible values: Not explicitly designated, quickly filtered out all data points where population was stated as 0 or less as obviously implausible values.
+
+
+### Poverty Rate Data: 
+
+* Size of the original Data set: 								
+* Rows: 92
+* Cols: 36
+* What does each row represent: One neighborhood’s ACS count of adults aged 20–64, including how many are   unemployed, in the labor force, and below poverty.
+* What are the relevant variables, and how are they coded?
+  * unemployed_20_64  (integer)= “Population 20 to 64 years unemployed”
+  * laborforce_20_64  (integer) = “Population 20 to 64 years in civilian labor force”
+  * deep_pov_civlab_20_64  (integer) = “Population 20 to 64 years in civilian labor force below poverty”
+  * NeighborhoodGroup (string categorical): one of the 12 major neighborhoods
+* Are there any missings, implausible values, or other data quality issues in the relevant variables
+* Missing / Implausible values: All the current variables are > 0, so no NA values are present and there are no further missing or implausible values in the data set
+
+
+### Education dataset
+* Rows: 92
+* Columns: 36
+* Each row represents: a Seattle neighborhood and the number of people in different education levels 
+* Relevant variables and how they’re coded:
+  * PercentPreSchool: Percentage of preschool children for each fo the 12 neighborhoods
+  * PercentK: Percentage of kindergarten children present in all of the 12 neighborhoods selected
+  * PercentPrimary: : Percentage of children in grades 1-8th present in all of the 12 neighborhoods selected
+  * PercentSecondary: : Percentage of students in grades 9-12th grade present in all of the 12 neighborhoods selected
+  * PercentPostSecondary:  Percentage of students in college or any higher education in all of the 12 neighborhoods selected
+  * All of these variables represent the percentage different enrollment levels depending on the population 
+* Missing / implausible values: N/A
+
+
+### Race and Ethnicity dataset: 
+* Rows: 92
+* Columns: 38
+* Each row represents: a Seattle neighborhood and the the different numbers of peoples races and ethnicity
+* What are the relevant variables, and how are they coded?
+  * Black_pct
+  * Asian_pct
+  * White_pct
+  * NHPI_pct
+  * Hispanic_pct
+  * AIAN_pct
+  * All of theses variables represent different percentages based off of race 
+* Missing implausible values: N/A
+
+### Parks Dataset
+* Rows:  81
+* Columns: 7
+* Each row represents:
+* Each row corresponds to a specific urban center or hub urban village
+* Relevant variables and how they’re coded:
+  * NeighborhoodGroup: Neighborhood classification based on park location.
+  * Name: Name of the park.
+  * Park Count (PC)`: Count of unique parks per neighborhood.
+* Missing/ implausible values: No missing or implausible values were shown inside the dataset
+
+
+### Urban dataset
+* Rows: 45
+* Columns: 29
+* Each row represents: a specific urban center or hub urban village.
+* Relevant variables and how they’re coded:
+  * NeighborhoodGroup: Categorized based on location.
+  * Urban Center Count (UCC): Number of urban centers per neighborhood.
+  * Plan Type: Indicates "Urban Centers" or "Hub Urban Villages."
+* Missing/ implausible values: No missing or implausible values were shown inside the dataset
+
+
+## Methods
+
+### Changing Crime Rates
+
+  We imported the crime and population CSV datasets, retaining all columns from `crime_data` and simplifying `population_data` to neighborhood and population fields. We converted the `OffenseDate` from string to Date object using `parse_time()`, extracted the year, and created a `NeighborhoodGroup` variable using `mutate()` and `ifelse(str_detect(...))` logic in both datasets to group similar neighborhoods. We then summarized crime data by year, neighborhood group, and offense category, producing an `offense_count` column, and merged datasets with `left_join()` on the `NeighborhoodGroup` field. We also cleaned offense subcategories into three main categories for clarity. We excluded records from earlier years and filtered out sparse data using a threshold filter on yearly crime rates to ensure temporal and geographic consistency, removing unreliable year-neighborhood pairs. Key variables included `Yearly Crime Rate` (per 1,000 residents), `offense_count`, `Total Population`, `NeighborhoodGroup`, `Year`, `Offense Category`, and `Offense Sub Category`. 
+  Each dataset was cleaned separately, filtered to the 2016-2024 timeframe, grouped crime data to produce `offense_count`, merged with population data, and calculated normalized crime rates within visualization functions using `produce_line_graph()` and `produce_bar_graph()`. Neighborhood names varied across datasets, requiring manual grouping to align them correctly. Crime data included sparse records, which we filtered out for relevance. Automatic color palettes were hard to interpret, so we used RColorBrewer to choose palettes for graphs. We primarily relied on arithmetic means to calculate crime rates by neighborhood and offense type, without applying advanced statistical methods like regression.
+
+### Education vs. Diversity
+
+  Each dataset required cleaning and transforming before the analysis could be done. In the education data, relevant columns were renamed for clarity, and new variables were created by summing public and private preschool and kindergarten enrollment. In the population dataset, a new column, `NeighborhoodGroup`, was created using string matching to group individual neighborhoods into larger areas. Rows with unmatched neighborhoods were excluded to ensure consistency for merging. All datasets were joined using left join on neighborhood names. After merging, long versions of the data were created using `pivot_long() `to support faceted plots and allow for comparison across categories. All data cleaning (e.g. renaming, filtering, and regional grouping) was performed to standardize input across all sources. Missing values were excluded to avoid introducing bias in comparisons. 
+  The analysis focused only on neighborhoods with consistent data across datasets. After cleaning the education enrollment and population datasets, we merged them using a `left join` on neighborhood names to ensure consistent alignment. We then reshaped the merged data into a long format using `pivot_long()` for easier faceting in our plots. Next, we calculated enrollment rates by dividing the summed enrollment counts (public and private preschool and kindergarten) by the population aged three and up, providing a normalized measure for comparison. Using `ggplot`, we generated bar charts with log scales and the rest of the graphs used facet wrapping to compare groups visually. 
+  Finally, we explored how education engagement rates varied across neighborhoods and examined the demographic composition by analyzing the percentages of each racial group within each neighborhood. One limitation was the subjectiveness of neighborhood grouping: manual grouping (e.g., all neighborhoods with “Hill” grouped into “Capitol Hill”) introduced inconsistencies. Some lower-income or historically underserved neighborhoods were grouped together (e.g., Rainier Beach, Othello, South Park into “South Seattle”), potentially overshadowing meaningful variation within these groups. This grouping might cause some findings, especially in the race-based analysis of education enrollment, to be skewed or overly generalized. No advanced statistical methods like regression analysis were applied in this analysis; the focus was on descriptive counts, percentages, and visual exploration of the data.
+
+### Unemployment vs. Deep Poverty Rates
+
+  To analyze poverty rates, we first cleaned the data by selecting only the necessary columns: `Neighborhood Name` (renamed to Neighborhood), `Population 20 to 64 years unemployed`, `Population 20 to 64 years in the civilian labor force`, and the `population below poverty`. We then calculated two new variables, unemployment rate and deep poverty rate, using mutate(), dividing unemployed counts and deep poverty counts by the corresponding civilian labor force for each neighborhood. We treated all neighborhoods equally without applying any weighting adjustments. 
+  The key variables for our research question were `unemp_rate_20_64` and `deep_pov_rate_20_64`. To conduct the analysis, we loaded and cleaned the data as described, computed the two rate variables, assigned neighborhoods to groups, and then visualized the relationship between unemployment and deep poverty rates using a scatterplot in `ggplot2`, coloring points by neighborhood group and adding a linear trend line with `geom_smooth(method="lm")`. 
+  Challenges included potential errors from String matching, the risk of bias from dropping “N/A” neighborhoods, and the fact that the analysis was correlational rather than causal, meaning unobserved factors could influence the results. No advanced statistical methods were used beyond the basic linear trend line to visualize associations.
+
+### Public Amenities Access
+
+  To evaluate the distribution of public amenities across Seattle, we used data from multiple sources, including urban village classifications, public park records, and established population estimates. We cleaned the data by filtering the urban centers dataset to include only Urban Centers and Hub Urban Villages, and assigning each village to a broader `NeighborhoodGroup` based on location and name patterns. Similarly, we grouped parks by proximity and park name patterns to assign them to NeighborhoodGroups. After grouping, we calculated the number of unique parks per group and computed Urban Center Count (UCC) and Park Count (PC), then summed them to create a Total Amenities variable. We merged this amenities data with population estimates by NeighborhoodGroup to normalize for population size. 
+  Since there was no missing data, we didn’t need to remove or impute any records. Relevant variables included Urban Center Count, Park Count, Total Amenities, Total Population, and the calculated amenities rate (amenities per 10,000 residents). To conduct the analysis, we loaded the datasets, filtered unnecessary columns, assigned groups, computed counts and amenities rates, and visualized the results with a horizontal bar graph. 
+  Challenges included filtering out many unnecessary columns and determining which columns were actually relevant for the analysis. No advanced statistical methods were used beyond computing simple rates and generating bar charts for comparison.
+
+
+## Results
+
+### Changing Crime Rates
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(RColorBrewer))
+
+crime_data <- read_csv("./Datasets/SPD_Crime_Data__2008-Present.csv", show_col_types = FALSE)
+
+population_data <- read_csv("./Datasets/hh_population_types_Neighborhoods_7932363052017489999.csv", show_col_types = FALSE)
+
+education <- read_csv("./Datasets/education_Neighborhoods_1871220638301550035.csv", show_col_types = FALSE)
+
+race_ethnicity <- read_delim("Datasets/race_ethnicity_Neighborhoods_-7085838689260358328.csv")
+
+population <- read_csv("./Datasets/hh_population_types_Neighborhoods_7932363052017489999.csv", show_col_types = FALSE)
+
+poverty_data <- read_csv("./Datasets/poverty_Neighborhoods_4633402121131220268.csv", show_col_types = FALSE)
+
+urban_data <- read_csv("./Datasets/Urban_Centers_and_Villages_Growth_Monitoring_Table.csv", show_col_types = FALSE)
+
+parks_data <- read_csv("./Datasets/Parks_Not_SPR_-6276928844092750966.csv", show_col_types = FALSE)
+```
+
+
+```{r}
+population_data <- population_data %>% 
+  select(`Neighborhood Name`, `Total Population`) %>% 
+  filter(`Total Population` > 0) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Belltown|Downtown Commercial Core|Pioneer Square/International District|Uptown|Downtown|South Lake Union"), "Downtown / Core", NA)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Capitol Hill|North Capitol Hill|First Hill|First Hill/Capitol Hill"),
+    "Capitol Hill", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Rainier Beach|Columbia City|Seward Park|Mt. Baker/North Rainier|Othello|South Park|Riverview|Roxhill/Westwood|Highland Park"),
+    "South Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Duwamish/SODO|Georgetown|Greater Duwamish"), "SODO / Duwamish", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Central Area/Squire Park|Judkins Park|Madrona/Leschi|23rd & Union-Jackson|Madison-Miller"), "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Ballard|Sunset Hill/Loyal Heights|Whittier Heights|Crown Hill|Greenwood/Phinney Ridge|Greenwood-Phinney Ridge"),
+    "Ballard", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Queen Anne|Upper Queen Anne|Interbay|Magnolia"), "Queen Anne / Magnolia", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "West Seattle Junction|Morgan Junction|Alki/Admiral|Fauntleroy/Seaview|Arbor Heights|Genesee Hill|North Delridge"), "West Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "University District|Roosevelt|Ravenna/Bryant|Laurelhurst/Sand Point|Wedgwood/View Ridge"), "University District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Northgate|Olympic Hills/Victory Heights|Haller Lake|Cedar Park/Meadowbrook|Aurora-Licton Springs"), "North Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Green Lake|Wallingford|Fremont"), "Green Lake / Wallingford", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Eastlake|Cascade/Eastlake"), "Eastlake", NeighborhoodGroup)) %>%
+  filter(!is.na(NeighborhoodGroup)) 
+
+crime_data <- crime_data %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "CAPITOL HILL|MILLER PARK|BROADWAY"), 
+    "Capitol Hill", NA)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "COLUMBIA CITY|BRIGHTON/DUNLAP|RAINIER BEACH|RAINIER VIEW|HILLMAN CITY|LAKEWOOD/SEWARD PARK|NEW HOLLY|CLAREMONT/RAINIER VISTA|BEACON HILL"), 
+    "South Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "SODO|GEORGETOWN|COMMERCIAL DUWAMISH|COMMERCIAL HARBOR ISLAND|INDUSTRIAL"),
+    "SODO / Duwamish", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "DOWNTOWN COMMERCIAL|PIONEER SQUARE|BELLTOWN|CHINATOWN/INTERNATIONAL DISTRICT|SLU/CASCADE|FIRST HILL"), 
+    "Downtown / Core", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "CENTRAL AREA/SQUIRE PARK|JUDKINS PARK|MADRONA/LESCHI"), 
+    "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "BALLARD NORTH|BALLARD SOUTH|PHINNEY RIDGE|GREENWOOD"), 
+    "Ballard", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "ALKI|FAUNTLEROY SW|NORTH ADMIRAL|ROXHILL/WESTWOOD/ARBOR HEIGHTS|HIGH POINT|NORTH DELRIDGE|SOUTH DELRIDGE|HIGHLAND PARK"), 
+    "West Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "EASTLAKE|MONTLAKE/PORTAGE BAY"), 
+    "Eastlake", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "QUEEN ANNE|MAGNOLIA"), 
+    "Queen Anne / Magnolia", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "UNIVERSITY|ROOSEVELT/RAVENNA|SANDPOINT"), 
+    "University District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(Neighborhood, 
+    "-|UNKNOWN|OOJ|FK ERROR"), 
+    "Unclear / Misc", NeighborhoodGroup)) %>% 
+  filter(!is.na(NeighborhoodGroup), NeighborhoodGroup != "Unclear / Misc") 
+
+crime_data <- crime_data %>%
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "ASSAULT"), 
+    "ASSAULT", `Offense Sub Category`)) %>%
+  mutate(`Offense Category` = ifelse(
+    str_detect(`Offense Sub Category`, "ASSAULT|HOMICIDE|RAPE|ROBBERY|SEX|KIDNAPPING|PROSTITUTION"), 
+    "VIOLENT CRIME", `Offense Category`)) %>%
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "SEX|PROSTITUTION|RAPE"), 
+    "SEX CRIME", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "PROPERTY"), 
+    "MISC. PROPERTY CRIME", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "EXTORTION"), 
+    "MONEY-RELATED", `Offense Sub Category`)) %>% 
+  mutate(`Offense Category` = ifelse(
+    str_detect(`Offense Sub Category`, "PROPERTY"), 
+    "PROPERTY CRIME", `Offense Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "PROPERTY"), 
+    "MISC. PROPERTY CRIME", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "NARCOTIC"), 
+    "DRUG-RELATED", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "NO CONTACT"), 
+    "RESTRAINING ORDER VIOLATION", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "WEAPON"), 
+    "WEAPON-RELATED", `Offense Sub Category`)) %>% 
+  mutate(`Offense Sub Category` = ifelse(
+    str_detect(`Offense Sub Category`, "CONDUCT"), 
+    "DISORDERLY CONDUCT", `Offense Sub Category`)) 
+
+
+population_data <- population_data %>% 
+  filter(NeighborhoodGroup %in% crime_data$NeighborhoodGroup)
+
+#NOTE: got %in% from 10.4.1 of INFO 201 Textbook
+
+crime_data <- crime_data %>% 
+  filter(Neighborhood != "-" & Precinct != "OOJ" & Precinct != "-") %>% 
+  mutate(`Offense DateTime` = as.POSIXct(`Offense Date`, format = "%m/%d/%Y %I:%M:%S %p")) %>% 
+  mutate(`Report DateTime` = as.POSIXct(`Report DateTime`, format = "%m/%d/%Y %I:%M:%S %p")) %>% 
+  mutate(year = year(`Report DateTime`)) %>% 
+  arrange(`Report DateTime`)
+
+population_data <- population_data %>%
+  group_by(NeighborhoodGroup) %>%
+  summarise(`Total Population` = mean(`Total Population`, na.rm = TRUE), .groups = "drop")
+
+produce_line_graph <- function(dataset, population_data, type) {
+  population_copy <- population_data
+  dataset <- dataset %>%
+    filter(year < 2025) %>%
+    group_by(year, NeighborhoodGroup) %>%
+    summarise(offense_count = n(), .groups = "drop") %>%
+    left_join(population_copy, by = "NeighborhoodGroup") %>%
+    mutate(`Yearly Crime Rate` = (offense_count / `Total Population`) * 1000) %>%
+    filter(`Yearly Crime Rate` > max(`Yearly Crime Rate`)/100)
+
+  ggplot(dataset, aes(x = year, y = `Yearly Crime Rate`, 
+                      color = factor(NeighborhoodGroup))) +
+    geom_point() + geom_path() +
+    labs(
+      title = paste0("Changing ", type, " Crime Rates in Seattle Neighborhoods (~2016-2024)"),
+      x = "Year",
+      y = "Crime Rate (Per 1000 Residents)",
+      color = "Neighborhood"
+    )
+}
+
+
+overall_data <- crime_data %>% 
+  group_by(year, NeighborhoodGroup)
+
+violence_data <- crime_data %>% 
+  filter(`Offense Category` == "VIOLENT CRIME") %>% 
+  group_by(year, NeighborhoodGroup) 
+
+property_data <- crime_data %>% 
+  filter(`Offense Category` == "PROPERTY CRIME") %>% 
+  group_by(year, NeighborhoodGroup) 
+
+misc_data <- crime_data %>% 
+  filter(`Offense Category` == "ALL OTHER") %>% 
+  group_by(year, NeighborhoodGroup) 
+
+produce_bar_graph <- function(dataset, population_data, type) {
+  population_copy <- population_data
+  
+  dataset <- dataset %>%
+    filter(year < 2025 & year >= 2016) %>%
+    group_by(year, NeighborhoodGroup, `Offense Category`, `Offense Sub Category`) %>%
+    summarise(offense_count = n(), .groups = "drop") %>%
+    left_join(population_copy, by = "NeighborhoodGroup") %>%
+    mutate(`Crime Rate` = (offense_count / `Total Population`) * 1000) %>%
+    group_by(NeighborhoodGroup, `Offense Category`, `Offense Sub Category`) %>%
+    summarise(`Crime Rate` = mean(`Crime Rate`), .groups = "drop") %>%
+    filter(`Crime Rate` > max(`Crime Rate`) / 100)
+  
+  ggplot(dataset, aes(x = `NeighborhoodGroup`, y = `Crime Rate`, 
+                      fill = factor(`Offense Sub Category`))) +
+    geom_col() +
+    scale_fill_manual(values = c(brewer.pal(8, "Dark2"), brewer.pal(12, "Set1"))) +
+    coord_flip() +
+    labs(
+      title = paste0(type, " Crime Rate by Neighborhood in Seattle (~2016–2024)"),
+      x = "Neighborhood",
+      y = "Average Yearly Crime Rate (Per 1000 Residents)",
+      fill = "Offense Subcategory"
+    )
+}
+
+produce_line_graph(overall_data, population_data, "Overall")
+
+```
+
+Overall, crime rates in Seattle vary significantly across neighborhoods, with some areas experiencing much higher levels of criminal activity than others. The highest overall crime rates are found in neighborhoods like SODO/Duwamish and Downtown/Core, where the total number of crimes can exceed or approach one incident per resident annually. In contrast, neighborhoods such as Capitol Hill and Eastlake maintain some of the lowest overall crime rates, with incidents well below 300 per 1,000 residents. Other neighborhoods, including Queen Anne / Magnolia, University District, and West Seattle, fall into moderate crime rate categories, presenting a mix of safety levels depending on crime types.
+
+```{r}
+produce_bar_graph(violence_data, population_data, "Violent")
+```
+
+When examining violent crimes specifically, assault is by far the most common offense citywide and largely drives violent crime rates in high-crime neighborhoods. South Seattle, SODO / Duwamish and Downtown/Core report elevated violent crime rates, ranging from around 150 to nearly 200 incidents per 1,000 residents. By contrast, Queen Anne/Magnolia, Eastlake, and Capitol Hill report relatively low violent crime levels, with Queen Anne/Magnolia consistently well below 50 violent crimes per 1,000 residents.
+
+Robbery, kidnapping, and sex crimes are less common but tend to follow similar geographic patterns as assaults, clustering in higher-crime neighborhoods while remaining infrequent in safer areas.
+
+```{r}
+produce_bar_graph(property_data, population_data, "Property")
+```
+
+Property crimes such as theft and burglary are widespread and more evenly distributed, though they generally correlate with neighborhood density and commercial activity. SODO / Duwamish sees particularly high levels of property crime, a little under 1,000 crimes per 1,000 residents, contributing to its elevated overall crime rate, whereas neighborhoods like Eastlake, Central District, Capitol Hill, and Queen Anne / Magnolia have relatively low property crime numbers.
+
+```{r}
+produce_bar_graph(misc_data, population_data, "Misc.")
+```
+
+It is also important to note that many offenses fall under a broad “All Other” category in miscellaneous crimes data, meaning a notable number of crimes are not specifically categorized. In SODO / Duwamish, this rate of miscellaneous crimes lands around 500 per 1000 residents, but Eastlake maintains a very low rate of less than 50 per 1000 residents. This lack of categorization adds some uncertainty to the nuances of the crime scene but does not obscure the larger trends seen across the city’s neighborhoods in terms of overall crime rates.
+
+
+### Education vs. Diversity
+
+```{r}
+education <- education %>% 
+  select(`Neighborhood Name`,`Population 3 years and over enrolled in school`,`Enrolled in nursery school or preschool public`,`Enrolled in nursery school or preschool private`,`Enrolled in kindergarten public`,`Enrolled in kindergarten private`,`Enrolled in elementary school (grades 1-8)`,`Enrolled in high school (grades 9-12)`,`Enrolled in college or graduate school`)
+
+education <- education %>% 
+  rename(
+    `Neighborhood` = `Neighborhood Name`,
+    `Age 3+ in School` = `Population 3 years and over enrolled in school`,
+    `Public Preschool Enrollment` = `Enrolled in nursery school or preschool public`,
+    `Private Preschool Enrollment` = `Enrolled in nursery school or preschool private`,
+    `Public Kindergarten Enrollment` = `Enrolled in kindergarten public`,
+    `Private Kindergarten Enrollment` = `Enrolled in kindergarten private`,
+    `Primary` = `Enrolled in elementary school (grades 1-8)`,
+    `Secondary-Equivalent` = `Enrolled in high school (grades 9-12)`,
+    `Post-Secondary` = `Enrolled in college or graduate school`
+  ) %>% 
+  mutate(
+    `Preschool Enrollment` = `Public Preschool Enrollment` + `Private Preschool Enrollment`,
+    `K Enrollment` = `Public Kindergarten Enrollment` + `Private Kindergarten Enrollment`
+  ) %>% 
+  select(`Neighborhood`, `Age 3+ in School`, `Preschool Enrollment`, `K Enrollment`, `Primary`, `Secondary-Equivalent`, `Post-Secondary`)
+
+population <- population %>% 
+  select(`Neighborhood Name`, `Total Population`) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Belltown|Downtown Commercial Core|Pioneer Square/International District|Uptown|Downtown|South Lake Union"), "Downtown / Core", NA)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Capitol Hill|North Capitol Hill|First Hill|First Hill/Capitol Hill"),
+    "Capitol Hill", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Rainier Beach|Columbia City|Seward Park|Mt. Baker/North Rainier|Othello|South Park|Riverview|Roxhill/Westwood|Highland Park"),
+    "South Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Duwamish/SODO|Georgetown|Greater Duwamish"), "SODO / Duwamish", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Central Area/Squire Park|Judkins Park|Madrona/Leschi|23rd & Union-Jackson|Madison-Miller"), "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Ballard|Sunset Hill/Loyal Heights|Whittier Heights|Crown Hill|Greenwood/Phinney Ridge|Greenwood-Phinney Ridge"),
+    "Ballard", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Queen Anne|Upper Queen Anne|Interbay|Magnolia"), "Queen Anne / Magnolia", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "West Seattle Junction|Morgan Junction|Alki/Admiral|Fauntleroy/Seaview|Arbor Heights|Genesee Hill|North Delridge"), "West Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "University District|Roosevelt|Ravenna/Bryant|Laurelhurst/Sand Point|Wedgwood/View Ridge"), "University District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Northgate|Olympic Hills/Victory Heights|Haller Lake|Cedar Park/Meadowbrook|Aurora-Licton Springs"), "North Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Green Lake|Wallingford|Fremont"), "Green Lake / Wallingford", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Neighborhood Name`,
+    "Eastlake|Cascade/Eastlake"), "Eastlake", NeighborhoodGroup)) %>%
+  filter(!is.na(NeighborhoodGroup))
+
+mergeEducation <- left_join(population, education, by = c("Neighborhood Name" = "Neighborhood"))
+
+mergeEducation <- mergeEducation %>%
+  rename(`Neighborhood` = `NeighborhoodGroup`)
+
+education_long <- mergeEducation %>%
+  pivot_longer(
+    cols = c("Preschool Enrollment", "K Enrollment", "Primary", "Secondary-Equivalent", "Post-Secondary"),
+    names_to = "EducationLevel",
+    values_to = "Enrolled"
+  ) %>%
+  mutate(EnrollmentRate = Enrolled / `Age 3+ in School` * 100)
+
+
+ggplot(education_long, aes(x = EducationLevel, y = Enrolled, fill = EducationLevel)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ Neighborhood) +
+  scale_y_log10() +
+  labs(
+    title = "Education Enrollment Across Neighborhoods",
+    x = "Education Level",
+    y = "Low → High Enrollment (log scale)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+mergeEducation <- mergeEducation %>% 
+  mutate(
+    PercentPreSchool = `Preschool Enrollment`/ `Total Population` * 100,
+    PercentK = `K Enrollment` /  `Total Population` * 100,
+    PercentPrimary = `Primary` /  `Total Population` * 100,
+    PercentSecondary = `Secondary-Equivalent` /  `Total Population` * 100,
+    PercentPostSecondary = `Post-Secondary` /  `Total Population` * 100)
+
+mergeEducationLong <- mergeEducation %>% 
+  select(`Neighborhood`, `PercentPreSchool`, `PercentK`, `PercentPrimary`, `PercentSecondary`, `PercentPostSecondary`) %>% 
+  pivot_longer(
+    cols = starts_with("Percent"),
+    names_to = "EducationLevel",
+    values_to = "Percent")
+              
+mergeEducationLong %>%
+  ggplot(aes(x = reorder(Neighborhood, Percent), y = Percent, fill = EducationLevel)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  facet_wrap(~EducationLevel, scales = "free_x") +
+  labs(x = "Neighborhood", y = "Percent Enrolled") 
+```
+
+Education enrollment is highest from Primary to Post-Secondary levels, reflecting both compulsory schooling and increased access, while Preschool and Kindergarten see the lowest enrollment across neighborhoods.
+
+
+```{r}
+race_ethnicity <- race_ethnicity %>%
+  select(`Neighborhood Name`, `Total Population`, "Total Population" , "Black or African American Alone","Asian Alone" , "White Alone", 
+         "Native Hawaiian and Other Pacific Islander Alone", "Hispanic or Latino (of any race)", "American Indian and Alaska Native Alone", 
+         "Percent Persons of Color") 
+colnames(race_ethnicity) <- c("Neighborhood", "Total", "Black", "Asian", "White", "NHPI", "Hispanic", "AIAN", "POC")
+
+
+race_ethnicity <- race_ethnicity %>%
+  mutate(
+    Black_pct = (Black / Total) * 100,
+    Asian_pct = (Asian / Total) * 100,
+    White_pct = (White / Total) * 100,
+    NHPI_pct = (NHPI / Total) * 100,
+    Hispanic_pct = (Hispanic / Total) * 100,
+    AIAN_pct = (AIAN / Total) * 100)
+
+
+mergeRace <- left_join(population, race_ethnicity, by = c("Neighborhood Name" = "Neighborhood"))
+
+race_long <- mergeRace %>% 
+  pivot_longer(
+    cols = c("Black_pct", "Asian_pct", "White_pct", "NHPI_pct", "Hispanic_pct",   "AIAN_pct"), 
+    names_to = "Race",
+    values_to = "Percentage")
+
+
+ggplot(race_long, aes( x= Race, y = Percentage, fill = Race)) +
+  geom_col() +
+  scale_y_continuous(limits = c(0, 100)) +
+  scale_fill_discrete(labels = c("Black_pct" = "Black", "Asian_pct" = "Asian", 
+                                 "White_pct" = "White", "NHPI_pct" = "NHPI",
+                                 "Hispanic_pct" = "Hispanic", "AIAN_pct" = "AIAN")) +
+  scale_x_discrete(labels = c("Black_pct" = "Black", "Asian_pct" = "Asian", 
+                                 "White_pct" = "White", "NHPI_pct" = "NHPI",
+                                 "Hispanic_pct" = "Hispanic", "AIAN_pct" = "AIAN")) +
+  facet_wrap(~NeighborhoodGroup) +
+  labs(
+    title = "Racial Compositon by Neighborhood",
+    x = "Race", 
+    y = "Percentage of Popualtion") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Neighborhoods with more families tend to have better access to education overall, and higher-income areas show greater representation of White and Asian populations, with fewer AIAN, Black, Hispanic, and NHPI residents.
+
+```{r}
+
+merged_together <- race_long %>% 
+  left_join(education_long, by = c("Neighborhood Name" = "Neighborhood")) %>% 
+  rename(Neighborhood = `Neighborhood Name`)
+
+merged_together <- merged_together  %>% 
+  select(NeighborhoodGroup, Race,Percentage, EducationLevel, EnrollmentRate) %>% 
+  mutate(Race = str_replace(Race, "_pct", ""))
+
+
+merged_together %>% 
+  filter(!is.na(EducationLevel)) %>%
+  mutate(EducationLevel = factor(EducationLevel, levels = c("Preschool Enrollment", "K Enrollment", "Primary", "Secondary-Equivalent", "Post-Secondary"))) %>% 
+  ggplot(aes(x = EducationLevel, y = EnrollmentRate, fill = EducationLevel)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~ Race) +
+  labs(
+    title = "Education Enrollment Rates Across Racial Groups",
+    x = "Education Level",
+    y = "Enrollment Rate") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Despite demographic differences, access to various education levels appears consistent across racial groups, with Post-Secondary education being the most commonly pursued, highlighting a strong emphasis on higher education.
+
+### Unemployment vs. Deep Poverty Rates
+
+```{r}
+poverty_rates <- poverty_data %>%
+  select(
+    Neighborhood = `Neighborhood Name`,
+    unemployed_20_64 = `Population 20 to 64 years unemployed`,
+    laborforce_20_64 = `Population 20 to 64 years in civilian labor force`,
+    deep_pov_civlab_20_64 = `Population 20 to 64 years in civilian labor force below poverty`
+  ) %>%
+  mutate(
+    unemp_rate_20_64 = unemployed_20_64 / laborforce_20_64,
+    deep_pov_rate_20_64 = deep_pov_civlab_20_64 / laborforce_20_64
+  ) %>% 
+  mutate(
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Ballard|Sunset Hill|Whittier Heights|Blue Ridge|Crown Hill|Bitter Lake|Broadview|Greenwood"), "Ballard", "N/A"),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Capitol Hill|First Hill/Capitol Hill|North Capitol Hill|Miller Park|Madison-Miller|First Hill"), "Capitol Hill", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Central Area|Judkins Park|Madrona|Leschi|23rd & Union-Jackson"), "Central District", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Downtown|Belltown|Pioneer Square|Uptown|South Lake Union|Cascade|Fremont"), "Downtown / Core", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Eastlake|Montlake|Portage Bay|Madison Park"), "Eastlake", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "Queen Anne|Upper Queen Anne|Magnolia|Interbay"), "Queen Anne / Magnolia", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "SODO|Duwamish|Georgetown|Greater Duwamish"), "SODO / Duwamish", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "South Park|Othello|Rainier Beach|Columbia City|Mt\\. Baker|NewHolly|Beacon Hill"), "South Seattle", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "University District|Roosevelt|Ravenna|Bryant|Wedgwood|View Ridge|Northgate|Maple Leaf|Laurelhurst|Sand Point|Lake City"), "University District", NeighborhoodGroup),
+    NeighborhoodGroup = if_else(str_detect(Neighborhood, "West Seattle|Admiral|Fauntleroy|Genesee Hill|Junction|Arbor Heights|Highland Park|Westwood|High Point|Riverview|Delridge"), "West Seattle", NeighborhoodGroup)
+  ) %>%
+  group_by(NeighborhoodGroup) %>% 
+  filter(NeighborhoodGroup != "N/A")
+
+ggplot(poverty_rates, aes(x = unemp_rate_20_64, y = deep_pov_rate_20_64, color = factor(NeighborhoodGroup))) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    x = "Unemployment Rate",
+    y = "Deep-Poverty Rate",
+    title = "Unemployment vs. Deep Poverty (20–64 yrs) on a neighborhood level",
+    color = "Neighborhood"
+  )
+```
+
+We found that there is a relationship between unemployment and deep poverty among working‐age adults (20–64). Neighborhoods with higher unemployment rates among adults aged 20 to 64 tend to have higher deep poverty rates overall. A few outliers exist, but the upward trend shows that as unemployment increases the share of working-age adults in deep poverty also rises.
+
+
+### Public Amenities Access
+```{r}
+
+urban_data <- urban_data %>%
+  select(`Village Name` = VILLAGE_NAME, 
+         `Plan Type` = COMP_PLAN_TYPE) %>% 
+  filter(`Plan Type` %in% c("Urban Centers", "Hub Urban Villages")) 
+
+
+urban_data <- urban_data %>% 
+  mutate(NeighborhoodGroup = "N/A") %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Capitol Hill|First Hill|First Hill/Capitol Hill"), "Capitol Hill", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Ballard|Fremont"), "Ballard", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Belltown|West Seattle Junction|Belltown|South Lake Union"), "West Seattle", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "University Campus|University District|University District Northwest"), "University District", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Bitter Lake Village|Lake City|Northgate|Ravenna"), "North Seattle", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "12th Avenue|Pike/Pine"), "Central District", NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = ifelse(`Village Name` == "Mt Baker", "South Seattle", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(`Village Name` == "Uptown", "Queen Anne / Magnolia", NeighborhoodGroup)) %>% 
+  mutate(NeighborhoodGroup = ifelse(str_detect(`Village Name`, "Chinatown-International District|Commercial Core|Downtown|Pioneer Square|Denny Triangle"), "Downtown / Core", NeighborhoodGroup)) %>% 
+  filter(NeighborhoodGroup != "N/A") %>% 
+  group_by(NeighborhoodGroup, )
+
+
+urban_data <- urban_data %>% 
+  group_by(`NeighborhoodGroup`) %>% 
+  summarize(`Urban Center Count` = n())
+
+
+parks_data <- parks_data %>% 
+  select(Name = NAME)  
+  
+  
+parks_data <- parks_data %>%
+  mutate(NeighborhoodGroup = "N/A") %>% 
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Sakuma Viewpoint|Myrtle Edwards Park|Carl S English, Jr Gardens|South Ship Canal Trail"),
+    "Queen Anne / Magnolia",
+    NA_character_)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Ruby Chow Park|Toolalt Village Park|Sbaqwah Park|Tathtathootseed Park|Jack Perry Memorial Park|El Centro De La Raza"),
+    "South Seattle",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Shilshole Bay Marina|Burke-Gilman Trail|Hiram M. Chittenden Locks"),
+    "Ballard",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Olympic Sculpture Park|Bell Street Pier at Pier 66|Fortson Square|Washington Street End|Seattle Center|Habitat Beach"),
+    "Downtown / Core",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Jack Block Park|Terminal 18 Public Access Park|Terminal 115 Viewpoint|Fishermen's Terminal|Harbor Marina Corporate Center|Spokane Street Bridge|Bridge Gear Park|Duwamish River Peoples Park"),
+    "SODO / Duwamish",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Salmon Cove Park|Hahahpoos Village Park"),
+    "West Seattle",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(
+    str_detect(Name, "Montlake Cut|Union Bay Natural Area|Peace Park"),
+    "University District",
+    NeighborhoodGroup)) %>%
+  mutate(NeighborhoodGroup = if_else(Name == "Centennial Park", "Central District", NeighborhoodGroup)) %>% 
+  group_by(NeighborhoodGroup) %>% 
+  summarize(`Park Count` = n_distinct(Name))
+
+
+amenities_data <- merge(urban_data, parks_data, by = "NeighborhoodGroup") %>% 
+  rename(
+    `UCC` = `Urban Center Count`,
+    `PC` = `Park Count`
+  ) %>% 
+  mutate(`Total` = `UCC` + `PC`)
+
+amenities_data <- merge(amenities_data, population_data, by = "NeighborhoodGroup") %>% 
+  select(NeighborhoodGroup, `Total Population`, UCC, PC, Total) %>% 
+  group_by(NeighborhoodGroup) %>% 
+  summarize(`Population` = sum(`Total Population`),
+           UCC = sum(UCC, na.rm = TRUE) / n(),
+    PC = sum(PC, na.rm = TRUE) / n(),
+    Total = sum(Total, na.rm = TRUE) / n())
+
+
+amenities_data <- amenities_data %>% 
+  mutate(`Amenities Rate` = (Total / Population) * 10000)
+
+ggplot(amenities_data, aes(x = NeighborhoodGroup, y = `Amenities Rate`, fill = factor(NeighborhoodGroup))) +
+  coord_flip() +
+  geom_col() +
+  labs(
+    title = "Amenities Distribution by Neighborhood",
+    x = "Neighborhood",
+    y = "Number of Amenities per 10,000 Residents",
+    fill = "Neighborhood"
+  )
+```
+
+
+The results reveal substantial variation in the distribution of amenities across Seattle neighborhoods when normalized per 10,000 residents. South Seattle and Downtown / Core stand out with the highest amenities rates (> 6 areas per 10,000 residents), followed by West Seattle and Ballard, suggesting that these areas have a disproportionately high concentration of urban centers and non-SPR parks relative to their population size. In contrast, neighborhoods such as Queen Anne / Magnolia and the Central District exhibit considerably lower amenities rates (~2 per 10,000), indicating a relative scarcity of these public resources. However, because this analysis focuses on rates of amenities rather than absolute counts, and the geographical size of each neighborhood group varies, the findings do not necessarily reflect how many amenities are physically available within a given area. Rather, the results highlight the relative density of amenities in relation to population size, not their total number or geographic distribution.
+
+
+## Discussion
+
+### Discussion for Question 1
+
+  The crime data reveals substantial disparities in safety across Seattle neighborhoods in the last 8 years, varied by patterns relative to type and location. Assaults dominated in the proportion of violent crimes, especially in industrial and commercial areas such as SODO/Duwamish and the Downtown core. In contrast, more residential neighborhoods like Queen Anne/Magnolia, Eastlake, and Capitol Hill report significantly lower levels of violent crime, although property crimes are still significantly present, almost double the rate of violent crimes (~200+ per 1000 residents). This data does suggest a spectrum between types of crimes and frequency, though one where industrial / urban areas experience the highest proportion of either. Despite the dataset’s limitations, the analysis provides a reasonably clear picture of how safety and crime are distributed at the neighborhood level in Seattle.
+  
+  It should be noted there were several limitations which affected the analysis and interpretation of results. First, the original crime dataset contained a large number of small or overlapping neighborhood designations. To improve clarity and statistical consistency, we manually grouped these into broader, more recognizable areas. In doing so, though, some neighborhoods were omitted, either due to insufficient data, geographic outlier status, or lack of relevance to the core analysis. Another constraint involved the population data, as it was difficult to ensure the data aligned on a year-to-year basis with each yearly crime count. There was only one dataset we could find where the populations were grouped by neighborhood, but it was a singular count of the population, not a multi-year record. To determine the per capita crime rates, we approximated with the available population data and each yearly crime count to determine relative crime rates in each neighborhood. Additionally, a substantial number of reported incidents were labeled with vague classifications like “All Other,” which made it difficult to confidently categorize them as either violent or property crimes. The dataset’s reliance on only two broad crime categories limited the ability to identify or explore more nuanced patterns, such as distinctions between drug offenses, vandalism, or domestic violence, which could have added valuable context to neighborhood-level crime characteristics.
+  
+  To improve the depth and accuracy of this analysis, future research should incorporate several key enhancements. Firstly, year-by-year population records for each neighborhood to match with the crime data would allow for more precise crime rate calculations over time, rather than the approximation that we relied on. Expanding the crime categorization beyond “Violent” and “Property” to include specific offenses like vandalism, drug-related crimes, or domestic violence would offer a clearer picture of the nature of crime across different areas. We would consider “Substance Abuse”, “Domestic Non-Violent”, and other such categories, to start. Moreover, analyzing temporal trends, such as how crime levels change month-to-month or year-to-year, could reveal valuable, more precise insights into seasonal or situational patterns within these neighborhoods to create a much clearer image of the crime scene. Finally, integrating community perspectives through surveys or public feedback would provide a richer understanding of how safe residents feel, which may not always align with raw crime statistics alone.
+
+
+### Discussion for Question 2:
+
+  The analysis revealed several key patterns about education enrollment and race across Seattle neighborhoods. First, preschool and kindergarten enrollment numbers are consistently lower across the city, suggesting lower demand for early childhood education or barriers to access the education. In contrast, enrollment in primary though post-secondary education is higher in all areas likely reflecting the influence of compulsory education laws and a more widespread availability of public schools.
+  
+  In terms of racial composition, most neighborhoods exhibit relatively similar breakdowns, though higher-income areas tend to have a larger portion of White and Asian residents with a smaller population of AMerican Indian and Alaska Native, Black, Hispanic, and Native Hawaiian and Pacific Islander (NHPI) individuals. Despite these racial differences in neighbors, enrollment rates across races appear fairly similar. This might suggest equitable access to education opportunities, particularly at the post- secondary level , which has the highest enrollment rates citywide. This could point to the fact that Seattle puts an emphasis on higher education.
+  
+  One of the biggest limitations of this analysis is the mismatch between the datasets. The total population in the neighborhood level data did not align cleanly with the groups in the education dataset, which made it difficult to compute accurate rates and compare enrollment across neighborhoods. Additionally neighood groups were done manually and subjective, potentially leading to overgeneralization. Due to this, some of the conclusions about racial patterns in enrollment may be skewed or less reliable. 
+  
+  To strengthen this analysis, future research should prioritize using more precise and aligned population data, ideally with consistent neighborhood definitions across all datasets. It would also be helpful to study income data or school quality indicators to explore why early education enrollment is lower and whether racial disparities exist at a smaller level. Additionally, collecting or accessing data over numerous years could help us determine if these trends are stable or changing over time, particularly for post-secondary enrollment. 
+
+### Discussion for Question 3:
+
+  The analysis shows a clear positive correlation between unemployment among people aged 20 to 64 and deep poverty rates across Seattle neighborhoods. This suggests that neighborhoods with higher unemployment tend to also have higher levels of deep poverty. It indicates that joblessness is a significant factor linked to severe economic hardship at the neighborhood level. Although the correlation is strong, it does not prove that unemployment causes deep poverty. However, the relationship highlights how employment status can reflect broader patterns of financial vulnerability in different parts of the city.
+  
+  There are several limitations to this analysis. First, because it looks only at neighborhood-level data, it cannot establish causation. Other important factors, such as education levels, income, or housing costs, may also play a major role and could influence both unemployment and poverty rates. Additionally, the analysis relies on broad neighborhood groupings that may overlook variation within specific areas. This can make it difficult to capture more detailed or localized trends that might tell a different story.
+  
+  To better understand the connection between unemployment and deep poverty, future research should include more variables. For example, adding information on education, income, racial and ethnic composition, or access to public resources could reveal more about the causes of poverty. It would also be helpful to examine how these relationships change over time. Looking at trends over several years could show whether rising unemployment leads to deeper poverty, or whether both are part of larger economic patterns affecting certain neighborhoods.
+
+### Discussion for Question 4: 
+
+The analysis of amenity distribution across Seattle neighborhoods, measured as the number of non-SPR parks and urban centers per 10,000 residents, reveals varied access to public infrastructure related to neighborhood, as suspected. Neighborhood groups such as South Seattle and Downtown / Core exhibit the highest amenities rates, suggesting that residents in these areas enjoy greater proximity to green space and planned urban centers relative to their population size. This pattern may reflect historical patterns of urban investment, zoning, and the concentration of development around economic or cultural hubs.
+
+In contrast, neighborhoods in the Central District show significantly lower rates of amenities per capita. These areas are often home to more racially and economically diverse populations, being Seattle’s staple historically Black neighborhood, raising questions about equity in urban planning and resource allocation. The relative scarcity of amenities in these districts could indicate systemic underinvestment or barriers in the planning process that have resulted in less infrastructure per resident. These disparities are not just numerical—they can translate to real differences in quality of life, access to outdoor recreation, and connections to transportation or economic opportunities.
+
+That said, several limitations constrain the conclusions we can draw from this dataset. Most notably, the parks data only includes non-Seattle Parks and Recreation (SPR) properties, excluding many public parks that likely play a large role in local recreation. This omission likely leads to an undercount of actual amenities, especially in neighborhoods that rely heavily on SPR facilities. Additionally, the categorization of neighborhoods into broader groups can blur meaningful variation within those groups; what’s true for one part of South Seattle may not be true for another, though, in the grander scheme of things, we can generalize and say there are more reachable community areas according to the data. There’s also the assumption that all amenities equally serve all residents in a neighborhood, which overlooks the real-world complexities of physical access, transportation barriers, and individual usage patterns.
+
+The definition of “amenities” in this analysis is also fairly limited to a personal interpretation. While urban centers and non-SPR parks are important indicators of amenities to the public, a fuller picture of neighborhood livability would include other facilities such as libraries, community centers, healthcare clinics, and public transit hubs. Similarly, using static counts of these centers does not reflect the quality, condition, or accessibility of the amenities in question. Two neighborhoods might each have one park, but their usefulness to the public could differ dramatically based on size, upkeep, safety, and programming.
+
+Future research could address these gaps in several ways. Incorporating more comprehensive datasets, especially those from Seattle Parks and Recreation, would provide a fuller accounting of green space. Overlaying demographic data such as income levels, racial composition, and housing density would help explore how disparities in amenities distribution align with broader patterns of inequity. Longitudinal data could also be used to track how changes in development or gentrification affect the distribution of public resources over time.
+
+Overall, this analysis offers a starting point for understanding how public amenities are distributed across Seattle and where gaps may exist. By identifying disparities in access, the findings can help guide more equitable planning and investment strategies to ensure that all neighborhoods (regardless of income, race, or geography) have adequate access to the resources that support well-being and community life.
+
+
+## Summary
+
+  By integrating crime, education, economic and amenity data, our study shows that Queen Anne / Magnolia, Eastlake, and Green Lake / Wallingford are among the best neighborhoods to live in Seattle and that balanced investments in safety, learning, jobs and public spaces can create truly livable neighborhoods. These areas combine low crime, stable school enrollment, economic resilience and easy access to parks and community centers. Our findings underscore the power of using multiple data sources to guide policy making and urban planning, offering a framework for cities to target interventions that foster healthier and more equitable communities. Policymakers can leverage these insights to prioritize resource allocation, design targeted programs and make more informed decisions that enhance quality of life across diverse neighborhoods.
